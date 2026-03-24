@@ -11,9 +11,11 @@ df2 = pd.read_excel('data.xlsx', sheet_name='metadata')
 X = df1.iloc[:, :-1].values  # Features
 y = df1.iloc[:, -1].values   # Target variable
 
-# Gets the ideal warmth rating for a given temperature. 
+# Gets the ideal warmth rating for a given temperature using a logistical curve
+
 def TempToWarmth(temp):
-    return (-19/70)*(temp-90) + 1
+    return 4 + (12/(1 + np.exp(-0.3 * (-temp + 55))))
+
 
 # Combines data from top and bottom items, and calculates the formality and ideal warmth differences.
 tmp = []
@@ -60,10 +62,8 @@ y_pred = rf.predict(X_test)
 
 from sklearn.metrics import classification_report, confusion_matrix
 
+
 print("Confusion Matrix:")
 print(confusion_matrix(y_test, y_pred))
 print("\nClassification Report:")
-print(classification_report(y_test, y_pred))
-
-
-
+print(classification_report(y_test, y_pred, zero_division=0))
