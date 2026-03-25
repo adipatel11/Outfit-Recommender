@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from dataclasses import dataclass
 from pathlib import Path
 import tkinter as tk
@@ -349,6 +350,8 @@ def run_check() -> int:
 
 
 def main() -> int:
+    random.seed(time.time_ns())
+
     if "--check" in sys.argv:
         return run_check()
 
