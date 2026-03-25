@@ -51,19 +51,52 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 # Train a Random Forest Classifier
 
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestRegressor
 
-rf = RandomForestClassifier(n_estimators=1000, max_depth=10, random_state=42)
+rf = RandomForestRegressor(n_estimators=883, max_depth=12, min_samples_leaf=1, min_samples_split=2, random_state=42)
 rf.fit(X_train, y_train)
 
 y_pred = rf.predict(X_test)
 
 # Evaluate the model
 
-from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.metrics import mean_squared_error, r2_score
+mse = mean_squared_error(y_test, y_pred)
+print(f'Mean Squared Error: {mse}')
+r2 = r2_score(y_test, y_pred)
+print(f'R^2 Score: {r2}')
 
 
-print("Confusion Matrix:")
-print(confusion_matrix(y_test, y_pred))
-print("\nClassification Report:")
-print(classification_report(y_test, y_pred, zero_division=0))
+
+"""""
+
+import optuna
+from plotly.io import show
+from sklearn.model_selection import cross_val_score
+
+def objective(trial):
+    n_estimators = trial.suggest_int('n_estimators', 100, 2000)
+    max_depth = trial.suggest_int('max_depth', 5, 50)
+    min_samples_split = trial.suggest_int('min_samples_split', 2, 20)
+    min_samples_leaf = trial.suggest_int('min_samples_leaf', 1, 20)
+    
+    rf = RandomForestRegressor(n_estimators=n_estimators, 
+                               max_depth=max_depth, 
+                               min_samples_split=min_samples_split,
+                               min_samples_leaf=min_samples_leaf,
+                               random_state=42)
+    
+    score = cross_val_score(rf, X_train, y_train, cv=5, scoring='neg_mean_squared_error', n_jobs=-1).mean()
+    
+    return score
+
+study = optuna.create_study(direction='maximize', sampler = optuna.samplers.TPESampler(seed=42))
+study.optimize(objective, n_trials=200)
+
+print(study.best_params)
+
+fig = optuna.visualization.plot_slice(study, params=['n_estimators', 'max_depth', 'min_samples_split', 'min_samples_leaf'])
+show(fig)
+
+
+"""""
