@@ -33,18 +33,51 @@ rf = joblib.load('outfit_recommender_rf.joblib')
 
 # Get temperature from user
 temp = float(input("Enter temperature (°F): "))
+warmth_target = TempToWarmth(temp)
 
-# Score every top/bottom combination
+# Cache item metadata to avoid repeated dataframe lookups
+item_info = {row.iloc[0]: row.iloc[1:-1].values for _, row in df2.iterrows()}
+
 tops    = df2[df2['Type'] == 'top']['Item'].tolist()
 bottoms = df2[df2['Type'] == 'bottom']['Item'].tolist()
 
+K = max(3, min(5, len(tops), len(bottoms)))
+
+# Compute neutral top and bottom using median color/warmth and most common category
+top_meta = np.array([item_info[t] for t in tops])
+bot_meta = np.array([item_info[b] for b in bottoms])
+
+neutral_top  = [pd.Series(top_meta[:, 0]).mode()[0], np.median(top_meta[:, 1].astype(float)), np.median(top_meta[:, 2].astype(float))]
+neutral_bot  = [pd.Series(bot_meta[:, 0]).mode()[0], np.median(bot_meta[:, 1].astype(float)), np.median(bot_meta[:, 2].astype(float))]
+
+# Shortlist top-K tops by scoring each against the neutral bottom
+top_scores = []
+for top in tops:
+    info = item_info[top]
+    features = [[info[0], neutral_bot[0],
+                 abs(info[1] - neutral_bot[1]),
+                 abs(info[2] + neutral_bot[2] - warmth_target)]]
+    top_scores.append((rf.predict(ct.transform(features))[0], top))
+shortlisted_tops = [t for _, t in sorted(top_scores, reverse=True)[:K]]
+
+# Shortlist top-K bottoms by scoring each against the neutral top
+bot_scores = []
+for bottom in bottoms:
+    info = item_info[bottom]
+    features = [[neutral_top[0], info[0],
+                 abs(neutral_top[1] - info[1]),
+                 abs(neutral_top[2] + info[2] - warmth_target)]]
+    bot_scores.append((rf.predict(ct.transform(features))[0], bottom))
+shortlisted_bottoms = [b for _, b in sorted(bot_scores, reverse=True)[:K]]
+
+# Evaluate only K² combinations among shortlisted items
 best_score, best_top, best_bottom = -np.inf, None, None
-for top, bottom in itertools.product(tops, bottoms):
-    top_info = df2[df2['Item'] == top].iloc[:, 1:-1].values[0]
-    bot_info  = df2[df2['Item'] == bottom].iloc[:, 1:-1].values[0]
+for top, bottom in itertools.product(shortlisted_tops, shortlisted_bottoms):
+    top_info = item_info[top]
+    bot_info  = item_info[bottom]
     features = [[top_info[0], bot_info[0],
                  abs(top_info[1] - bot_info[1]),
-                 abs(top_info[2] + bot_info[2] - TempToWarmth(temp))]]
+                 abs(top_info[2] + bot_info[2] - warmth_target)]]
     score = rf.predict(ct.transform(features))[0]
     if score > best_score:
         best_score, best_top, best_bottom = score, top, bottom
