@@ -53,7 +53,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 from sklearn.ensemble import RandomForestRegressor
 
-rf = RandomForestRegressor(n_estimators=883, max_depth=12, min_samples_leaf=1, min_samples_split=2, random_state=42)
+rf = RandomForestRegressor(n_estimators=861, max_depth=47, min_samples_leaf=1, min_samples_split=2, random_state=42)
 rf.fit(X_train, y_train)
 
 y_pred = rf.predict(X_test)
@@ -67,12 +67,16 @@ r2 = r2_score(y_test, y_pred)
 print(f'R^2 Score: {r2}')
 
 
+# Save the trained model to a file using joblib
+
 import joblib
 joblib.dump(rf, 'outfit_recommender_rf.joblib')
 
 
 
-"""""
+# Hyperparameter tuning using Optuna
+
+"""
 
 import optuna
 from plotly.io import show
@@ -103,4 +107,4 @@ fig = optuna.visualization.plot_slice(study, params=['n_estimators', 'max_depth'
 show(fig)
 
 
-"""""
+"""
