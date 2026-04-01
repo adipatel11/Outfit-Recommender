@@ -66,12 +66,11 @@ print(f'Mean Squared Error: {mse}')
 r2 = r2_score(y_test, y_pred)
 print(f'R^2 Score: {r2}')
 
-"""""
 
 import joblib
 joblib.dump(rf, 'outfit_recommender_rf.joblib')
 
-"""""
+
 
 """""
 
