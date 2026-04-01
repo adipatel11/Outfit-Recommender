@@ -36,7 +36,10 @@ def append_score(top_id, bottom_id, temperature, score):
 
 
 def load_photo(item_id):
-    img = Image.open(ITEM_PICS_DIR / f"{item_id}.png").resize((300, 300))
+    img = Image.open(ITEM_PICS_DIR / f"{item_id}.png")
+    w, h = img.size
+    new_w = 300
+    img = img.resize((new_w, int(h * new_w / w)), Image.LANCZOS)
     return ImageTk.PhotoImage(img)
 
 
