@@ -86,8 +86,13 @@ for top, bottom in itertools.product(shortlisted_tops, shortlisted_bottoms):
 root = tk.Tk()
 root.title("Best Outfit")
 
-top_img    = ImageTk.PhotoImage(Image.open(f"item_pics/{best_top}.png").resize((200, 200)))
-bottom_img = ImageTk.PhotoImage(Image.open(f"item_pics/{best_bottom}.png").resize((200, 200)))
+def open_scaled(path, width=200):
+    img = Image.open(path)
+    w, h = img.size
+    return img.resize((width, int(h * width / w)), Image.LANCZOS)
+
+top_img    = ImageTk.PhotoImage(open_scaled(f"item_pics/{best_top}.png"))
+bottom_img = ImageTk.PhotoImage(open_scaled(f"item_pics/{best_bottom}.png"))
 
 tk.Label(root, text=f"Best outfit for {temp}°F  (score: {best_score:.2f})", font=("Helvetica", 14)).pack(pady=8)
 tk.Label(root, image=top_img).pack()
